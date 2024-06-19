@@ -1,3 +1,5 @@
 from django.contrib import admin
+from .models import Jog
 
-# Register your models here.
+admin.site.register(Jog)
+
