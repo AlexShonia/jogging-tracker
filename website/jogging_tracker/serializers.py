@@ -1,9 +1,10 @@
 from rest_framework import serializers
-from jogging_tracker.models import Jog
+from jogging_tracker.models import Jog, User
 
 
 class JogSerializer(serializers.HyperlinkedModelSerializer):
-    user = serializers.ReadOnlyField(source="user.username")
+    user = serializers.ReadOnlyField(source="user.email")
+
     class Meta:
         model = Jog
         fields = [
@@ -15,3 +16,9 @@ class JogSerializer(serializers.HyperlinkedModelSerializer):
             "time",
             "location",
         ]
+
+
+class UserSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = User
+        fields = ["url", "email"]
