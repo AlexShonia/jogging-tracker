@@ -2,7 +2,10 @@ from rest_framework import viewsets, permissions
 from jogging_tracker.models import Jog, User
 from jogging_tracker.serializers import JogSerializer, UserSerializer
 from .permissions import IsOwnerOrAdmin, IsManagerOrAdmin
-import python_weather
+import requests, time
+from dotenv import load_dotenv
+import os
+from rest_framework.exceptions import ValidationError
 
 
 class JogViewSet(viewsets.ModelViewSet):
@@ -10,8 +13,9 @@ class JogViewSet(viewsets.ModelViewSet):
     serializer_class = JogSerializer
 
     def perform_create(self, serializer):
-        # self.getweather()
+        weather = self.getweather()
         serializer.save(user=self.request.user)
+        serializer.save(weather=weather)
 
     def get_queryset(self):
         if self.request.user.role == "admin":
@@ -19,23 +23,42 @@ class JogViewSet(viewsets.ModelViewSet):
         else:
             return Jog.objects.filter(user=self.request.user)
 
-    async def getweather(self):
-        # declare the client. the measuring unit used defaults to the metric system (celcius, km/h, etc.)
-        with python_weather.Client() as client:
-            # fetch a weather forecast from a city
-            weather = await client.get("New York")
+    def getweather(self):
+        load_dotenv()
+        api_key = os.environ.get("WEATHER_API_KEY")
 
-            # returns the current day's forecast temperature (int)
-            print(weather.temperature)
-            print("something bruh")
+        date = self.request.data["date"]
+        city_name = self.request.data["location"]
 
-            # get the weather forecast for a few days
-            for daily in weather.daily_forecasts:
-                print(daily)
+        if not date or not city_name:
+            raise ValidationError("Missing required fields: date or location")
 
-            # hourly forecasts
-            for hourly in daily.hourly_forecasts:
-                print(f" --> {hourly!r}")
+        try:
+            timestamp = int(time.mktime(time.strptime(date, "%Y-%m-%d")))
+        except ValueError:
+            raise ValidationError("Invalid date format")
+
+        geo_url = f"https://api.openweathermap.org/geo/1.0/direct?q={city_name}&limit=1&appid={api_key}"
+        geo_response = requests.get(geo_url)
+        geo = geo_response.json()
+
+        if len(geo) == 0:
+            raise ValidationError("City not found")
+
+        lat = geo[0].get("lat")
+        lon = geo[0].get("lon")
+
+        weather_url = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={lat}&lon={lon}&dt={timestamp}&units=metric&appid={api_key}"
+        weather_response = requests.get(weather_url)
+        weather_json = weather_response.json()
+
+        if not weather_json["data"]:
+            raise ValidationError("Something went wrong")
+
+        temperature = int(weather_json["data"][0]["temp"])
+        weather_description = weather_json["data"][0]["weather"][0]["description"]
+
+        return f"{weather_description}, {temperature} degrees"
 
 
 class UserViewSet(viewsets.ModelViewSet):

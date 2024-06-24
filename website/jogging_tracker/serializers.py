@@ -15,6 +15,7 @@ class JogSerializer(serializers.HyperlinkedModelSerializer):
             "distance",
             "time",
             "location",
+            "weather",
         ]
 
 

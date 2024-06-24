@@ -9,6 +9,7 @@ class Jog(models.Model):
     distance = models.FloatField()
     time = models.DurationField()
     location = models.CharField(max_length=100)
+    weather = models.CharField(max_length=100, null=True)
     user = models.ForeignKey(
         "jogging_tracker.User", related_name="jogs", on_delete=models.CASCADE
     )
