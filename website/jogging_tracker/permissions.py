@@ -1,15 +1,12 @@
 from rest_framework import permissions
-from .models import User
+from jogging_tracker.models import User
 
 
 class IsOwnerOrAdmin(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        return obj.user == request.user or User.objects.filter(role="admin").exists()
+        return obj.user == request.user or request.user.role == "admin"
 
 
 class IsManagerOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return (
-            User.objects.filter(role="manager").exists()
-            or User.objects.filter(role="admin").exists()
-        )
+        return request.user.role == "admin" or request.user.role == "manager"

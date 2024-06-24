@@ -1,5 +1,4 @@
-from dotenv import load_dotenv
-import os
+from django.conf import settings
 import requests, time
 from datetime import timedelta
 from django.urls import reverse
@@ -13,7 +12,7 @@ from jogging_tracker.serializers import (
     JogSerializer,
     UserSerializer,
 )
-from .permissions import IsOwnerOrAdmin, IsManagerOrAdmin
+from jogging_tracker.permissions import IsOwnerOrAdmin, IsManagerOrAdmin
 
 
 class JogViewSet(viewsets.ModelViewSet):
@@ -34,8 +33,7 @@ class JogViewSet(viewsets.ModelViewSet):
             return Jog.objects.filter(user=self.request.user)
 
     def getweather(self):
-        load_dotenv()
-        api_key = os.environ.get("WEATHER_API_KEY")
+        api_key = settings.WEATHER_API_KEY
 
         date = self.request.data["date"]
         city_name = self.request.data["location"]
@@ -48,7 +46,8 @@ class JogViewSet(viewsets.ModelViewSet):
         except ValueError:
             raise ValidationError("Invalid date format")
 
-        geo_url = f"https://api.openweathermap.org/geo/1.0/direct?q={city_name}&limit=1&appid={api_key}"
+        base_url = settings.WEATHER_URL
+        geo_url = f"{base_url}/geo/1.0/direct?q={city_name}&limit=1&appid={api_key}"
         geo_response = requests.get(geo_url)
         geo = geo_response.json()
 
@@ -58,7 +57,7 @@ class JogViewSet(viewsets.ModelViewSet):
         lat = geo[0].get("lat")
         lon = geo[0].get("lon")
 
-        weather_url = f"https://api.openweathermap.org/data/3.0/onecall/timemachine?lat={lat}&lon={lon}&dt={timestamp}&units=metric&appid={api_key}"
+        weather_url = f"{base_url}/data/3.0/onecall/timemachine?lat={lat}&lon={lon}&dt={timestamp}&units=metric&appid={api_key}"
         weather_response = requests.get(weather_url)
         weather_json = weather_response.json()
 
@@ -84,7 +83,7 @@ def weekly_report(request):
     week_ago = time.strftime("%Y-%m-%d", time.localtime(time.time() - 7 * 24 * 60 * 60))
     jogs = Jog.objects.filter(user=request.user, date__range=[week_ago, current_date])
 
-    if len(jogs) == 0:
+    if jogs.count() == 0:
         return Response("No jogs found in the last week", status.HTTP_404_NOT_FOUND)
 
     total_km = 0
@@ -102,14 +101,3 @@ def weekly_report(request):
         data,
         status=status.HTTP_200_OK,
     )
-
-
-@api_view(["GET"])
-def index_view(request):
-    base_url = request.build_absolute_uri("/")
-    api_urls = {
-        "jogs": base_url + reverse("jog-list"),
-        "users": base_url + reverse("user-list"),
-        "weekly_report": base_url + reverse("weekly_report"),
-    }
-    return Response(api_urls, status=status.HTTP_200_OK)

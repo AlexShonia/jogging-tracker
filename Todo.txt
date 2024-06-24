@@ -8,12 +8,20 @@ Write a REST API that tracks jogging times of users
  + The API must create a report on average speed & distance per week.
  + The API must be able to return data in the JSON format.
  • The API should provide filter capabilities for all endpoints that return a list of elements, as well should be able to support pagination.
+    + pagination
  • The API filtering should allow using parenthesis for defining operations precedence and use any combination of the available fields. The supported operations should at least include or, and, eq (equals), ne (not equals), gt (greater than), lt (lower than).
 Example -> (date eq '2016-05-01') AND ((distance gt 20) OR (distance lt 10)).
  • REST/GraphQL API. Make it possible to perform all user and admin actions via the API, including authentication.
  • In any case, you should be able to explain how a REST/GraphQL API works and demonstrate that by creating functional tests that use the REST/GraphQL Layer directly. Please be prepared to use REST/GraphQL clients like Postman, cURL, etc. for this purpose.
  • Write unit and e2e tests.
 
-+ add weekly_report to index
-+ change time input field from seconds to minutes
-+ format average speed to first decimal
++ .something import-ebi dafixe
++ len(jog) arasworia turn to jog.count()
++ load_env() in settings.py and accest them like: settings.WEATHER_API_KEY
++ move weathermap url to settings
++ fix customer being able to go to /users/
++ add admin role when creating superuser
++ dont make index view, use SimpleRouter
++ add requirements.txt
+add login and register view
+implement jwt token
