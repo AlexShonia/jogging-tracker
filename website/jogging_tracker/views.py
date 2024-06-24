@@ -1,11 +1,19 @@
-from rest_framework import viewsets, permissions
-from jogging_tracker.models import Jog, User
-from jogging_tracker.serializers import JogSerializer, UserSerializer
-from .permissions import IsOwnerOrAdmin, IsManagerOrAdmin
-import requests, time
 from dotenv import load_dotenv
 import os
+import requests, time
+from datetime import timedelta
+from django.urls import reverse
+from rest_framework import viewsets, permissions
+from rest_framework import status
 from rest_framework.exceptions import ValidationError
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from jogging_tracker.models import Jog, User
+from jogging_tracker.serializers import (
+    JogSerializer,
+    UserSerializer,
+)
+from .permissions import IsOwnerOrAdmin, IsManagerOrAdmin
 
 
 class JogViewSet(viewsets.ModelViewSet):
@@ -13,9 +21,11 @@ class JogViewSet(viewsets.ModelViewSet):
     serializer_class = JogSerializer
 
     def perform_create(self, serializer):
+        time = self.request.data["time"]
         weather = self.getweather()
-        serializer.save(user=self.request.user)
-        serializer.save(weather=weather)
+        serializer.save(
+            user=self.request.user, time=timedelta(minutes=float(time)), weather=weather
+        )
 
     def get_queryset(self):
         if self.request.user.role == "admin":
@@ -65,3 +75,41 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsManagerOrAdmin]
     serializer_class = UserSerializer
     queryset = User.objects.all()
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def weekly_report(request):
+    current_date = time.strftime("%Y-%m-%d")
+    week_ago = time.strftime("%Y-%m-%d", time.localtime(time.time() - 7 * 24 * 60 * 60))
+    jogs = Jog.objects.filter(user=request.user, date__range=[week_ago, current_date])
+
+    if len(jogs) == 0:
+        return Response("No jogs found in the last week", status.HTTP_404_NOT_FOUND)
+
+    total_km = 0
+    total_minutes = 0
+    for jog in jogs:
+        total_km += jog.distance
+        total_minutes += jog.time.total_seconds() / 60
+
+    average_distance = round(total_km / len(jogs), 1)
+    average_speed = round(average_distance / ((total_minutes / len(jogs)) / 60), 1)
+
+    data = {"average_speed": average_speed, "average_distance": average_distance}
+
+    return Response(
+        data,
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["GET"])
+def index_view(request):
+    base_url = request.build_absolute_uri("/")
+    api_urls = {
+        "jogs": base_url + reverse("jog-list"),
+        "users": base_url + reverse("user-list"),
+        "weekly_report": base_url + reverse("weekly_report"),
+    }
+    return Response(api_urls, status=status.HTTP_200_OK)

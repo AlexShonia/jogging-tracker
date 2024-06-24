@@ -17,7 +17,7 @@ class JogSerializer(serializers.HyperlinkedModelSerializer):
             "location",
             "weather",
         ]
-
+        read_only_field = "weather"
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
