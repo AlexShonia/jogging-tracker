@@ -9,4 +9,5 @@ router.register(r"users", views.UserViewSet, basename="user")
 urlpatterns = [
     path("", include(router.urls)),
     path("weekly_report/", views.weekly_report, name="weekly_report"),
+    path("register/", views.register, name="register"),
 ]

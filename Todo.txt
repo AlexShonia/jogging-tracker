@@ -23,5 +23,7 @@ Example -> (date eq '2016-05-01') AND ((distance gt 20) OR (distance lt 10)).
 + add admin role when creating superuser
 + dont make index view, use SimpleRouter
 + add requirements.txt
-add login and register view
-implement jwt token
++ implement jwt token
++ add login and register view
+make weeklyreport model and store each week
+use m/hr or something else instead of km/h

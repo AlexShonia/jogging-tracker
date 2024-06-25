@@ -13,6 +13,7 @@ from jogging_tracker.serializers import (
     UserSerializer,
 )
 from jogging_tracker.permissions import IsOwnerOrAdmin, IsManagerOrAdmin
+from django.contrib.auth.hashers import make_password
 
 
 class JogViewSet(viewsets.ModelViewSet):
@@ -92,8 +93,8 @@ def weekly_report(request):
         total_km += jog.distance
         total_minutes += jog.time.total_seconds() / 60
 
-    average_distance = round(total_km / len(jogs), 1)
-    average_speed = round(average_distance / ((total_minutes / len(jogs)) / 60), 1)
+    average_distance = round(total_km / jogs.count(), 1)
+    average_speed = round(average_distance / ((total_minutes / jogs.count()) / 60), 1)
 
     data = {"average_speed": average_speed, "average_distance": average_distance}
 
@@ -101,3 +102,21 @@ def weekly_report(request):
         data,
         status=status.HTTP_200_OK,
     )
+
+
+@api_view(["POST"])
+def register(request):
+    data = request.data
+
+    try:
+        User.objects.create(
+            email=data["email"],
+            username=data["email"],
+            password=make_password(data["password"]),
+        )
+
+        return Response("Succesful registration", status=status.HTTP_200_OK)
+    except:
+        return Response(
+            "User with this email exists", status=status.HTTP_400_BAD_REQUEST
+        )
