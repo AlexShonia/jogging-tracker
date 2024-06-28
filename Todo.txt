@@ -25,5 +25,10 @@ Example -> (date eq '2016-05-01') AND ((distance gt 20) OR (distance lt 10)).
 + add requirements.txt
 + implement jwt token
 + add login and register view
-make weeklyreport model and store each week
-use m/hr or something else instead of km/h
++ make weeklyreport model and store each week
++ on Jog creation make weeklyreport and assign the jog
++ when jogs are deleted recalculate weekly report, and if there are no jogs delete it
+   + override view delete function
++ weekly report foreign key shouldnt be cascade. there should be no on_delete
++ can't add more than one jog per date? cap? yes I can
++ refactor recalculation of weekly report

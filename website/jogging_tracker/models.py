@@ -13,10 +13,16 @@ class Jog(models.Model):
     user = models.ForeignKey(
         "jogging_tracker.User", related_name="jogs", on_delete=models.CASCADE
     )
+    weekly_report = models.ForeignKey(
+        "jogging_tracker.WeeklyReport",
+        related_name="jogs",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         ordering = ["date"]
-
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
@@ -65,3 +71,10 @@ class User(AbstractUser):
         Admin = "admin"
 
     role = models.CharField(max_length=255, choices=Role.choices, default=Role.Customer)
+
+
+class WeeklyReport(models.Model):
+    week_end = models.DateField()
+    user = models.ForeignKey("jogging_tracker.User", related_name="reports", on_delete=models.DO_NOTHING)
+    average_speed = models.FloatField()
+    average_distance = models.FloatField()

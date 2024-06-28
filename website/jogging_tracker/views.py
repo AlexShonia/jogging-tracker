@@ -1,19 +1,19 @@
-from django.conf import settings
-import requests, time
+import requests, time, datetime
 from datetime import timedelta
-from django.urls import reverse
+from django.conf import settings
+from django.contrib.auth.hashers import make_password
 from rest_framework import viewsets, permissions
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from jogging_tracker.models import Jog, User
+from jogging_tracker.models import Jog, User, WeeklyReport
 from jogging_tracker.serializers import (
     JogSerializer,
     UserSerializer,
+    WeeklyReportSerializer,
 )
 from jogging_tracker.permissions import IsOwnerOrAdmin, IsManagerOrAdmin
-from django.contrib.auth.hashers import make_password
 
 
 class JogViewSet(viewsets.ModelViewSet):
@@ -21,11 +21,75 @@ class JogViewSet(viewsets.ModelViewSet):
     serializer_class = JogSerializer
 
     def perform_create(self, serializer):
+        date_str = self.request.data["date"]
+        date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+        days_till_weekend = 6 - date.weekday()
+        delta = datetime.timedelta(days=days_till_weekend)
+        week_end = date + delta
+
+        if WeeklyReport.objects.filter(week_end=week_end).exists():
+            weekly_report = self.recalculate_weekly_report(
+                week_end=week_end, user=self.request.user, adding=self.request.data
+            )
+        else:
+            distance = self.request.data["distance"]
+            time = timedelta(minutes=float(self.request.data["time"]))
+            average_distance = distance
+            average_speed = int(distance) / (time.total_seconds() / 3600)
+            weekly_report = WeeklyReport.objects.create(
+                user=self.request.user,
+                week_end=week_end,
+                average_speed=average_speed,
+                average_distance=average_distance,
+            )
+
         time = self.request.data["time"]
         weather = self.getweather()
+
         serializer.save(
-            user=self.request.user, time=timedelta(minutes=float(time)), weather=weather
+            user=self.request.user,
+            time=timedelta(minutes=float(time)),
+            weather=weather,
+            weekly_report=weekly_report,
         )
+
+    def perform_destroy(self, instance):
+        week_end = instance.weekly_report.week_end
+        if instance.weekly_report.jogs.count() == 1:
+            WeeklyReport.objects.filter(
+                week_end=week_end, user=self.request.user
+            ).delete()
+            instance.delete()
+        else:
+            instance.delete()
+            self.recalculate_weekly_report(week_end=week_end, user=self.request.user)
+
+    def recalculate_weekly_report(self, week_end, user, adding=None):
+        weekly_report = WeeklyReport.objects.get(user=user, week_end=week_end)
+
+        jogs = weekly_report.jogs.all()
+
+        total_km = 0
+        total_minutes = 0
+        jog_count = 0
+        for jog in jogs:
+            jog_count += 1
+            total_km += jog.distance
+            total_minutes += jog.time.total_seconds() / 60
+
+        if adding:
+            jog_count += 1
+            total_km += float(adding["distance"])
+            total_minutes += float(adding["time"])
+
+        average_distance = round(total_km / jog_count, 1)
+        average_speed = round(average_distance / (total_minutes / jog_count / 60), 1)
+
+        WeeklyReport.objects.filter(week_end=week_end, user=self.request.user).update(
+            average_speed=average_speed,
+            average_distance=average_distance,
+        )
+        return weekly_report
 
     def get_queryset(self):
         if self.request.user.role == "admin":
@@ -80,28 +144,9 @@ class UserViewSet(viewsets.ModelViewSet):
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def weekly_report(request):
-    current_date = time.strftime("%Y-%m-%d")
-    week_ago = time.strftime("%Y-%m-%d", time.localtime(time.time() - 7 * 24 * 60 * 60))
-    jogs = Jog.objects.filter(user=request.user, date__range=[week_ago, current_date])
-
-    if jogs.count() == 0:
-        return Response("No jogs found in the last week", status.HTTP_404_NOT_FOUND)
-
-    total_km = 0
-    total_minutes = 0
-    for jog in jogs:
-        total_km += jog.distance
-        total_minutes += jog.time.total_seconds() / 60
-
-    average_distance = round(total_km / jogs.count(), 1)
-    average_speed = round(average_distance / ((total_minutes / jogs.count()) / 60), 1)
-
-    data = {"average_speed": average_speed, "average_distance": average_distance}
-
-    return Response(
-        data,
-        status=status.HTTP_200_OK,
-    )
+    report = WeeklyReport.objects.filter(user=request.user)
+    serializer = WeeklyReportSerializer(report, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])
