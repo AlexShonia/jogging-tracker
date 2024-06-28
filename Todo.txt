@@ -32,3 +32,4 @@ Example -> (date eq '2016-05-01') AND ((distance gt 20) OR (distance lt 10)).
 + weekly report foreign key shouldnt be cascade. there should be no on_delete
 + can't add more than one jog per date? cap? yes I can
 + refactor recalculation of weekly report
++ refactor weeklyreport view to generic list

@@ -2,8 +2,7 @@ import requests, time, datetime
 from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
-from rest_framework import viewsets, permissions
-from rest_framework import status
+from rest_framework import viewsets, permissions, status, mixins, generics
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -141,12 +140,12 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
 
 
-@api_view(["GET"])
-@permission_classes([permissions.IsAuthenticated])
-def weekly_report(request):
-    report = WeeklyReport.objects.filter(user=request.user)
-    serializer = WeeklyReportSerializer(report, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+class WeeklyReportList(generics.ListAPIView):
+    serializer_class = WeeklyReportSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return WeeklyReport.objects.filter(user=self.request.user)
 
 
 @api_view(["POST"])
