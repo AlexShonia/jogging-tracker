@@ -9,5 +9,5 @@ router.register(r"users", views.UserViewSet, basename="user")
 urlpatterns = [
     path("", include(router.urls)),
     path("weekly_report/", views.WeeklyReportList.as_view(), name="weekly_report"),
-    path("register/", views.register, name="register"),
+    path("register/", views.Register.as_view(), name="register"),
 ]

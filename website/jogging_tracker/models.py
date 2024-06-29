@@ -75,6 +75,6 @@ class User(AbstractUser):
 
 class WeeklyReport(models.Model):
     week_end = models.DateField()
-    user = models.ForeignKey("jogging_tracker.User", related_name="reports", on_delete=models.DO_NOTHING)
+    user = models.ForeignKey("jogging_tracker.User", related_name="reports", on_delete=models.CASCADE)
     average_speed = models.FloatField()
     average_distance = models.FloatField()

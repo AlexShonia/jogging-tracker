@@ -1,18 +1,18 @@
 import requests, time, datetime
 from datetime import timedelta
 from django.conf import settings
-from django.contrib.auth.hashers import make_password
-from rest_framework import viewsets, permissions, status, mixins, generics
-from rest_framework.exceptions import ValidationError
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework import viewsets, permissions, generics, status
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from jogging_tracker.models import Jog, User, WeeklyReport
 from jogging_tracker.serializers import (
     JogSerializer,
     UserSerializer,
     WeeklyReportSerializer,
+    SignUpSerializer,
 )
 from jogging_tracker.permissions import IsOwnerOrAdmin, IsManagerOrAdmin
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 class JogViewSet(viewsets.ModelViewSet):
@@ -26,7 +26,9 @@ class JogViewSet(viewsets.ModelViewSet):
         delta = datetime.timedelta(days=days_till_weekend)
         week_end = date + delta
 
-        if WeeklyReport.objects.filter(week_end=week_end).exists():
+        if WeeklyReport.objects.filter(
+            week_end=week_end, user=self.request.user
+        ).exists():
             weekly_report = self.recalculate_weekly_report(
                 week_end=week_end, user=self.request.user, adding=self.request.data
             )
@@ -145,22 +147,38 @@ class WeeklyReportList(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return WeeklyReport.objects.filter(user=self.request.user)
+        if self.request.user.role == "admin":
+            return WeeklyReport.objects.all()
+        else:
+            return WeeklyReport.objects.filter(user=self.request.user)
 
 
-@api_view(["POST"])
-def register(request):
-    data = request.data
+class Register(generics.CreateAPIView):
+    model = User
+    permission_classes = [permissions.AllowAny]
+    serializer_class = SignUpSerializer
 
-    try:
-        User.objects.create(
-            email=data["email"],
-            username=data["email"],
-            password=make_password(data["password"]),
-        )
+    def perform_create(self, serializer):
+        serializer.save()
 
-        return Response("Succesful registration", status=status.HTTP_200_OK)
-    except:
+        credentials = {
+            "email": serializer.validated_data["email"],
+            "password": serializer.validated_data["password"],
+        }
+
+        token_view = TokenObtainPairView.as_view()
+        token_response = token_view(self.request._request, credentials)
+
+        if token_response.status_code == status.HTTP_200_OK:
+            self.token_data = token_response.data
+        else:
+            self.token_data = {"detail": "Token generation failed."}
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
         return Response(
-            "User with this email exists", status=status.HTTP_400_BAD_REQUEST
+            {"token": self.token_data},
+            status=status.HTTP_201_CREATED,
         )

@@ -30,8 +30,28 @@ class WeeklyReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = WeeklyReport
         fields = [
+            "user",
             "week_end",
             "average_distance",
             "average_speed",
             "jogs",
         ]
+
+
+class SignUpSerializer(serializers.ModelSerializer):
+    repeat_password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ["email", "password", "repeat_password"]
+
+    def save(self, **kwargs):
+        repeat_password = self.validated_data.pop("repeat_password")
+        password = self.validated_data.get("password")
+
+        if password != repeat_password:
+            raise serializers.ValidationError(
+                {"repeat_password": "Passwords do not match."}
+            )
+
+        return User.objects.create_user(**self.validated_data)
