@@ -34,7 +34,6 @@ class WeeklyReportSerializer(serializers.ModelSerializer):
             "week_end",
             "average_distance",
             "average_speed",
-            "jogs",
         ]
 
 

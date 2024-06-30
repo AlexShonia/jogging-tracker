@@ -13,13 +13,6 @@ class Jog(models.Model):
     user = models.ForeignKey(
         "jogging_tracker.User", related_name="jogs", on_delete=models.CASCADE
     )
-    weekly_report = models.ForeignKey(
-        "jogging_tracker.WeeklyReport",
-        related_name="jogs",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
 
     class Meta:
         ordering = ["date"]

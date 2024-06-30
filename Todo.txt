@@ -39,5 +39,8 @@ Example -> (date eq '2016-05-01') AND ((distance gt 20) OR (distance lt 10)).
 + add a signupserializer so that data is validated properly
    + have 2 passwords that match
 + authenticate right after registration
-recalculat which jogs are in each week each time instead of having foreignkey weekly_report
++ recalculat which jogs are in each week each time instead of having foreignkey weekly_report
+   + when jog is created recalculate
 use get_user_modelfrom django.contrib.auth import get_user_model instead of importing your user model?
+   naah
+   

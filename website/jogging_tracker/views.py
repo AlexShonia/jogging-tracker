@@ -29,7 +29,7 @@ class JogViewSet(viewsets.ModelViewSet):
         if WeeklyReport.objects.filter(
             week_end=week_end, user=self.request.user
         ).exists():
-            weekly_report = self.recalculate_weekly_report(
+            self.recalculate_weekly_report(
                 week_end=week_end, user=self.request.user, adding=self.request.data
             )
         else:
@@ -37,7 +37,7 @@ class JogViewSet(viewsets.ModelViewSet):
             time = timedelta(minutes=float(self.request.data["time"]))
             average_distance = distance
             average_speed = int(distance) / (time.total_seconds() / 3600)
-            weekly_report = WeeklyReport.objects.create(
+            WeeklyReport.objects.create(
                 user=self.request.user,
                 week_end=week_end,
                 average_speed=average_speed,
@@ -51,12 +51,18 @@ class JogViewSet(viewsets.ModelViewSet):
             user=self.request.user,
             time=timedelta(minutes=float(time)),
             weather=weather,
-            weekly_report=weekly_report,
         )
 
     def perform_destroy(self, instance):
-        week_end = instance.weekly_report.week_end
-        if instance.weekly_report.jogs.count() == 1:
+        date = instance.date
+        days_till_weekend = 6 - date.weekday()
+        delta = datetime.timedelta(days=days_till_weekend)
+        week_end = date + delta
+
+        jogs = Jog.objects.filter(
+            user=self.request.user, date__range=[week_end - timedelta(days=6), week_end]
+        )
+        if jogs.count() == 1:
             WeeklyReport.objects.filter(
                 week_end=week_end, user=self.request.user
             ).delete()
@@ -68,7 +74,9 @@ class JogViewSet(viewsets.ModelViewSet):
     def recalculate_weekly_report(self, week_end, user, adding=None):
         weekly_report = WeeklyReport.objects.get(user=user, week_end=week_end)
 
-        jogs = weekly_report.jogs.all()
+        jogs = Jog.objects.filter(
+            user=self.request.user, date__range=[week_end - timedelta(days=6), week_end]
+        )
 
         total_km = 0
         total_minutes = 0
