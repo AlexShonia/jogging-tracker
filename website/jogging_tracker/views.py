@@ -13,11 +13,13 @@ from jogging_tracker.serializers import (
 )
 from jogging_tracker.permissions import IsOwnerOrAdmin, IsManagerOrAdmin
 from rest_framework_simplejwt.views import TokenObtainPairView
+from jogging_tracker.filters import JogFilter
 
 
 class JogViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
     serializer_class = JogSerializer
+    filterset_class = JogFilter
 
     def perform_create(self, serializer):
         date_str = self.request.data["date"]
