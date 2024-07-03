@@ -13,7 +13,8 @@ from jogging_tracker.serializers import (
 )
 from jogging_tracker.permissions import IsOwnerOrAdmin, IsManagerOrAdmin
 from rest_framework_simplejwt.views import TokenObtainPairView
-from jogging_tracker.filters import JogFilter
+from jogging_tracker.filters import JogFilter, WeeklyReportFilter
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 class JogViewSet(viewsets.ModelViewSet):
@@ -150,11 +151,15 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsManagerOrAdmin]
     serializer_class = UserSerializer
     queryset = User.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'email']
+
 
 
 class WeeklyReportList(generics.ListAPIView):
     serializer_class = WeeklyReportSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filterset_class = WeeklyReportFilter
 
     def get_queryset(self):
         if self.request.user.role == "admin":

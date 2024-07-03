@@ -20,9 +20,10 @@ Example -> (date eq '2016-05-01') AND ((distance gt 20) OR (distance lt 10)).
 + add a signupserializer so that data is validated properly
    + have 2 passwords that match
 + authenticate right after registration
-
 + recalculat which jogs are in each week each time instead of having foreignkey weekly_report
    + when jog is created recalculate
    
 + add filter
 + or filter
++ user filter
+weekly report filter
