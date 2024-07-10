@@ -1,17 +1,34 @@
 from django.test import TestCase
+from django.test import Client
+from django.urls import reverse
+from rest_framework.test import APIClient
 
-# Create your tests here.
-import datetime
-import time
 
-datetime.date.today()
-days_till_weekend = 6 - datetime.date.today().weekday()
-delta = datetime.timedelta(days=days_till_weekend)
+class RegisterTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.register_url = reverse("jogging_tracker:register")
+        self.login_url = reverse("jogging_tracker:login")
+        self.test_email = "test@mail.com"
+        self.test_password = "test"
+    def test_register(self):
+        client = APIClient()
+        response = client.post(
+            reverse("jogging_tracker:register"),
+            {"email": "test@mail.com", "password": "test", "repeat_password": "test"},
+        )
 
-week_end = datetime.date.today() + delta
-week_ago = time.strftime("%Y-%m-%d", time.localtime(time.mktime(week_end.timetuple()) - 7 * 24 * 60 * 60))
+        self.assertEqual(response.status_code, 201)
+        client.credentials(HTTP_AUTHORIZATION="Bearer " + response.data["token"]["access"])
 
-adding = 0
+        response = client.get(reverse("jogging_tracker:jog-list"))
 
-if adding:
-    print("yes")
+        print(response.content)
+
+
+
+    def test_users_list(self):
+        client = APIClient()
+        response = client.get(reverse("jogging_tracker:user-list"))
+        
+        print(response.content)

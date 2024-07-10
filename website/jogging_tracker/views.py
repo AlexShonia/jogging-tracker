@@ -1,4 +1,4 @@
-import requests, time, datetime
+import requests, datetime
 from datetime import timedelta
 from django.conf import settings
 from rest_framework import viewsets, permissions, generics, status
@@ -23,8 +23,7 @@ class JogViewSet(viewsets.ModelViewSet):
     filterset_class = JogFilter
 
     def perform_create(self, serializer):
-        date_str = self.request.data["date"]
-        date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+        date = serializer.validated_data.get("date")
         days_till_weekend = 6 - date.weekday()
         delta = datetime.timedelta(days=days_till_weekend)
         week_end = date + delta
@@ -33,11 +32,13 @@ class JogViewSet(viewsets.ModelViewSet):
             week_end=week_end, user=self.request.user
         ).exists():
             self.recalculate_weekly_report(
-                week_end=week_end, user=self.request.user, adding=self.request.data
+                week_end=week_end,
+                user=self.request.user,
+                adding=serializer.validated_data,
             )
         else:
-            distance = self.request.data["distance"]
-            time = timedelta(minutes=float(self.request.data["time"]))
+            distance = serializer.validated_data.get("distance")
+            time = serializer.validated_data.get("time")
             average_distance = distance
             average_speed = int(distance) / (time.total_seconds() / 3600)
             WeeklyReport.objects.create(
@@ -47,12 +48,12 @@ class JogViewSet(viewsets.ModelViewSet):
                 average_distance=average_distance,
             )
 
-        time = self.request.data["time"]
-        weather = self.getweather()
+        time = serializer.validated_data.get("time")
+        weather = self.get_weather(serializer)
 
         serializer.save(
             user=self.request.user,
-            time=timedelta(minutes=float(time)),
+            time=time * 60,
             weather=weather,
         )
 
@@ -91,8 +92,8 @@ class JogViewSet(viewsets.ModelViewSet):
 
         if adding:
             jog_count += 1
-            total_km += float(adding["distance"])
-            total_minutes += float(adding["time"])
+            total_km += float(adding.get("distance"))
+            total_minutes += float(adding.get("time").total_seconds() / 60)
 
         average_distance = round(total_km / jog_count, 1)
         average_speed = round(average_distance / (total_minutes / jog_count / 60), 1)
@@ -109,17 +110,18 @@ class JogViewSet(viewsets.ModelViewSet):
         else:
             return Jog.objects.filter(user=self.request.user)
 
-    def getweather(self):
+    def get_weather(self, serializer):
         api_key = settings.WEATHER_API_KEY
 
-        date = self.request.data["date"]
-        city_name = self.request.data["location"]
+        date = serializer.validated_data.get("date")
+        city_name = serializer.validated_data.get("location")
 
         if not date or not city_name:
             raise ValidationError("Missing required fields: date or location")
 
         try:
-            timestamp = int(time.mktime(time.strptime(date, "%Y-%m-%d")))
+            timestamp = int(datetime.datetime.combine(date, datetime.datetime.min.time()).timestamp())
+
         except ValueError:
             raise ValidationError("Invalid date format")
 
@@ -152,8 +154,7 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'email']
-
+    filterset_fields = ["id", "email"]
 
 
 class WeeklyReportList(generics.ListAPIView):

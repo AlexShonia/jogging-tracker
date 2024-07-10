@@ -26,4 +26,10 @@ Example -> (date eq '2016-05-01') AND ((distance gt 20) OR (distance lt 10)).
 + add filter
 + or filter
 + user filter
-weekly report filter
++ weekly report filter
+
++ move to postgres
++ user serializer.data in jog viewset instead of self.request.data
+   + time convertions will get messed up
+
+tests
