@@ -9,13 +9,21 @@ class Jog(models.Model):
     distance = models.FloatField()
     time = models.DurationField()
     location = models.CharField(max_length=100)
-    weather = models.CharField(max_length=100, null=True)
+    weather = models.OneToOneField(
+        "jogging_tracker.Weather", on_delete=models.CASCADE, null=True
+    )
     user = models.ForeignKey(
         "jogging_tracker.User", related_name="jogs", on_delete=models.CASCADE
     )
 
     class Meta:
         ordering = ["date"]
+
+
+class Weather(models.Model):
+    temperature = models.IntegerField()
+    description = models.CharField(max_length=100)
+
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
@@ -68,6 +76,8 @@ class User(AbstractUser):
 
 class WeeklyReport(models.Model):
     week_end = models.DateField()
-    user = models.ForeignKey("jogging_tracker.User", related_name="reports", on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        "jogging_tracker.User", related_name="reports", on_delete=models.CASCADE
+    )
     average_speed = models.FloatField()
     average_distance = models.FloatField()

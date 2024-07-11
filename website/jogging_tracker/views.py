@@ -4,7 +4,7 @@ from django.conf import settings
 from rest_framework import viewsets, permissions, generics, status
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
-from jogging_tracker.models import Jog, User, WeeklyReport
+from jogging_tracker.models import Jog, User, WeeklyReport, Weather
 from jogging_tracker.serializers import (
     JogSerializer,
     UserSerializer,
@@ -49,7 +49,8 @@ class JogViewSet(viewsets.ModelViewSet):
             )
 
         time = serializer.validated_data.get("time")
-        weather = self.get_weather(serializer)
+        weather_data = self.get_weather(serializer)
+        weather = Weather.objects.create(**weather_data)
 
         serializer.save(
             user=self.request.user,
@@ -120,7 +121,11 @@ class JogViewSet(viewsets.ModelViewSet):
             raise ValidationError("Missing required fields: date or location")
 
         try:
-            timestamp = int(datetime.datetime.combine(date, datetime.datetime.min.time()).timestamp())
+            timestamp = int(
+                datetime.datetime.combine(
+                    date, datetime.datetime.min.time()
+                ).timestamp()
+            )
 
         except ValueError:
             raise ValidationError("Invalid date format")
@@ -146,7 +151,10 @@ class JogViewSet(viewsets.ModelViewSet):
         temperature = int(weather_json["data"][0]["temp"])
         weather_description = weather_json["data"][0]["weather"][0]["description"]
 
-        return f"{weather_description}, {temperature} degrees"
+        return {
+            "temperature": temperature,
+            "description": weather_description,
+        }
 
 
 class UserViewSet(viewsets.ModelViewSet):

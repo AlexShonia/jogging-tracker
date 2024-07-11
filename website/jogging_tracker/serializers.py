@@ -1,9 +1,16 @@
 from rest_framework import serializers
-from jogging_tracker.models import Jog, User, WeeklyReport
+from jogging_tracker.models import Jog, User, WeeklyReport, Weather
+
+
+class WeatherSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Weather
+        fields = "__all__"
 
 
 class JogSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source="user.email")
+    weather = WeatherSerializer(read_only=True)
 
     class Meta:
         model = Jog
@@ -16,13 +23,12 @@ class JogSerializer(serializers.ModelSerializer):
             "location",
             "weather",
         ]
-        read_only_field = "weather"
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["email"]
+        fields = ["id", "email"]
 
 
 class WeeklyReportSerializer(serializers.ModelSerializer):
