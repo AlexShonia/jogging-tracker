@@ -32,10 +32,11 @@ Example -> (date eq '2016-05-01') AND ((distance gt 20) OR (distance lt 10)).
 + user serializer.data in jog viewset instead of self.request.data
    + time convertions will get messed up
 
++ make weather separate table or a JSON field
++ remove functionality of creating users in user list view
+
 tests
    + register succesfully
    + use named views and reverse 
    do tests about permissions. admin permissions test for example and etc
 
-make weather separate table or a JSON field
-be able to change user role from user detail page
