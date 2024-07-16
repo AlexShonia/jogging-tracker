@@ -48,7 +48,9 @@ tests
          + admin delete users
          + admin view weekly_report
       manager permissions
-      
+         + user permissions
+         + jog permissions
+         + weekly report permission
       customer permissions
       
 

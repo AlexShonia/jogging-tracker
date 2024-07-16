@@ -28,7 +28,7 @@ class Weather(models.Model):
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
-    def _create_user(self, email, password, role, **extra_fields):
+    def _create_user(self, email, password, role="customer", **extra_fields):
         validate_email(email)
         email = self.normalize_email(email)
         user = self.model(email=email, username=email, role=role, **extra_fields)
@@ -40,8 +40,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
 
-        role = "customer"
-        return self._create_user(email, password, role, **extra_fields)
+        return self._create_user(email, password, **extra_fields)
 
     def create_superuser(self, email, password, **extra_fields):
         extra_fields.setdefault("is_staff", True)
@@ -81,3 +80,6 @@ class WeeklyReport(models.Model):
     )
     average_speed = models.FloatField()
     average_distance = models.FloatField()
+
+    class Meta:
+        ordering = ["week_end"]
