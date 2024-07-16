@@ -39,4 +39,18 @@ tests
    + register succesfully
    + use named views and reverse 
    do tests about permissions. admin permissions test for example and etc
+      + admin permissions
+         + admin get jogs
+         + admin update jogs
+         + admin delete jogs
+         + admin get users
+         + admin update users
+         + admin delete users
+         + admin view weekly_report
+      manager permissions
+      
+      customer permissions
+      
+
+if weather api gaatrakebs, have error for it (still upload jog?)
 

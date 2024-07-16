@@ -65,22 +65,23 @@ class JogViewSet(viewsets.ModelViewSet):
         week_end = date + delta
 
         jogs = Jog.objects.filter(
-            user=self.request.user, date__range=[week_end - timedelta(days=6), week_end]
+            user=instance.user, date__range=[week_end - timedelta(days=6), week_end]
         )
+
         if jogs.count() == 1:
             WeeklyReport.objects.filter(
-                week_end=week_end, user=self.request.user
+                week_end=week_end, user=instance.user
             ).delete()
             instance.delete()
         else:
             instance.delete()
-            self.recalculate_weekly_report(week_end=week_end, user=self.request.user)
+            self.recalculate_weekly_report(week_end=week_end, user=instance.user)
 
     def recalculate_weekly_report(self, week_end, user, adding=None):
         weekly_report = WeeklyReport.objects.get(user=user, week_end=week_end)
 
         jogs = Jog.objects.filter(
-            user=self.request.user, date__range=[week_end - timedelta(days=6), week_end]
+            user=user, date__range=[week_end - timedelta(days=6), week_end]
         )
 
         total_km = 0
