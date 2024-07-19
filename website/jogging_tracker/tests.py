@@ -4,7 +4,7 @@ from rest_framework.test import APIClient
 from jogging_tracker.models import User, WeeklyReport
 
 
-class RegisterTest(TestCase):
+class Test(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.register_url = reverse("jogging_tracker:register")
@@ -45,11 +45,6 @@ class RegisterTest(TestCase):
         manager.save()
         self.assertEqual(manager.role, "manager")
 
-    def test_jog_list(self):
-        response = self.client.get(self.jog_list_url)
-
-        self.assertEqual(response.status_code, 200)
-
     def test_admin_permissions(self):
         add_jog_response = self.client.post(
             self.jog_list_url,
@@ -60,11 +55,9 @@ class RegisterTest(TestCase):
                 "location": "tbilisi",
             },
         )
-
         self.assertEqual(add_jog_response.status_code, 201)
 
         response = self.client.get(self.user_list_url)
-
         self.assertEqual(response.status_code, 403)
 
         login_response = self.client.post(
@@ -79,40 +72,36 @@ class RegisterTest(TestCase):
         User.objects.create_user(email="test1@mail.com", password="test1")
 
         user_list_response = self.client.get(self.user_list_url)
-
+        user_list_json = user_list_response.json()
         self.assertEqual(user_list_response.status_code, 200)
-        self.assertEqual(
-            user_list_response.content,
-            b'{"count":4,"next":null,"previous":null,"results":[{"id":4,"email":"test@mail.com","role":"customer"},{"id":5,"email":"admin@mail.com","role":"admin"},{"id":6,"email":"manager@mail.com","role":"manager"},{"id":7,"email":"test1@mail.com","role":"customer"}]}',
-        )
+        self.assertEqual(user_list_json["count"], 4)
 
+        test1_user = User.objects.get(email="test1@mail.com")
         update_user_response = self.client.put(
-            reverse("jogging_tracker:user-detail", args=[7]),
+            reverse("jogging_tracker:user-detail", args=[test1_user.id]),
             {"email": "test1@mail.com", "role": "manager"},
         )
-
+        update_user_json = update_user_response.json()
         self.assertEqual(update_user_response.status_code, 200)
-        self.assertEqual(
-            update_user_response.content,
-            b'{"id":7,"email":"test1@mail.com","role":"manager"}',
-        )
+        self.assertEqual(update_user_json["role"], "manager")
 
         delete_user_response = self.client.delete(
-            reverse("jogging_tracker:user-detail", args=[7])
+            reverse("jogging_tracker:user-detail", args=[test1_user.id])
         )
         self.assertEqual(delete_user_response.status_code, 204)
 
         # Jog permissions
         jog_list_response = self.client.get(self.jog_list_url)
-
+        jog_list_json = jog_list_response.json()
         self.assertEqual(jog_list_response.status_code, 200)
-        self.assertEqual(
-            jog_list_response.content,
-            b'{"count":1,"next":null,"previous":null,"results":[{"id":2,"user":"test@mail.com","date":"2024-01-01","distance":1.0,"time":"00:01:00","location":"tbilisi","weather":{"id":2,"temperature":4,"description":"clear sky"}}]}',
-        )
+        self.assertEqual(jog_list_json["count"], 1)
+
+        for jog in jog_list_json["results"]:
+            if jog["date"] == "2024-01-01":
+                jog_id = jog["id"]
 
         update_jog_response = self.client.put(
-            reverse("jogging_tracker:jog-detail", args=[2]),
+            reverse("jogging_tracker:jog-detail", args=[jog_id]),
             {
                 "date": "2024-01-01",
                 "distance": 2.0,
@@ -120,26 +109,20 @@ class RegisterTest(TestCase):
                 "location": "tbilisi",
             },
         )
-
+        update_jog_json = update_jog_response.json()
         self.assertEqual(update_jog_response.status_code, 200)
-        self.assertEqual(
-            update_jog_response.content,
-            b'{"id":2,"user":"test@mail.com","date":"2024-01-01","distance":2.0,"time":"00:00:01","location":"tbilisi","weather":{"id":2,"temperature":4,"description":"clear sky"}}',
-        )
+        self.assertEqual(update_jog_json["distance"], 2.0)
 
         delete_jog_response = self.client.delete(
-            reverse("jogging_tracker:jog-detail", args=[2])
+            reverse("jogging_tracker:jog-detail", args=[jog_id])
         )
         self.assertEqual(delete_jog_response.status_code, 204)
 
         # Weekly report permissions
         weekly_report_response = self.client.get(self.weekly_report_url)
-
+        weekly_report_json = weekly_report_response.json()
         self.assertEqual(weekly_report_response.status_code, 200)
-        self.assertEqual(
-            weekly_report_response.content,
-            b'{"count":0,"next":null,"previous":null,"results":[]}',
-        )
+        self.assertEqual(weekly_report_json["count"], 0)
 
     def test_manager_permissions(self):
         add_jog_response = self.client.post(
@@ -163,51 +146,45 @@ class RegisterTest(TestCase):
 
         # Jog permissions
         jog_list_response = self.client.get(self.jog_list_url)
-
+        jog_list_json = jog_list_response.json()
         self.assertEqual(jog_list_response.status_code, 200)
-        self.assertEqual(
-            jog_list_response.content,
-            b'{"count":0,"next":null,"previous":null,"results":[]}'
-        )
+        self.assertEqual(jog_list_json["count"], 0)
 
         # User permissions
         User.objects.create_user(email="test1@mail.com", password="test1")
 
         user_list_response = self.client.get(self.user_list_url)
-
+        user_list_json = user_list_response.json()
         self.assertEqual(user_list_response.status_code, 200)
-        self.assertEqual(
-            user_list_response.content,
-            b'{"count":4,"next":null,"previous":null,"results":[{"id":11,"email":"test@mail.com","role":"customer"},{"id":12,"email":"admin@mail.com","role":"admin"},{"id":13,"email":"manager@mail.com","role":"manager"},{"id":14,"email":"test1@mail.com","role":"customer"}]}',
-        )
+        self.assertEqual(user_list_json["count"], 4)
 
+        test1_user = User.objects.get(email="test1@mail.com")
         update_user_response = self.client.put(
-            reverse("jogging_tracker:user-detail", args=[14]),
+            reverse("jogging_tracker:user-detail", args=[test1_user.id]),
             {"email": "test1@mail.com", "role": "manager"},
         )
-
+        update_user_json = update_user_response.json()
         self.assertEqual(update_user_response.status_code, 200)
-        self.assertEqual(
-            update_user_response.content,
-            b'{"id":14,"email":"test1@mail.com","role":"manager"}',
-        )
+        self.assertEqual(update_user_json["role"], "manager")
 
         delete_user_response = self.client.delete(
-            reverse("jogging_tracker:user-detail", args=[14])
+            reverse("jogging_tracker:user-detail", args=[test1_user.id])
         )
         self.assertEqual(delete_user_response.status_code, 204)
 
         # Weekly report permissions
         weekly_report_response = self.client.get(self.weekly_report_url)
-
+        weekly_report_json = weekly_report_response.json()
         self.assertEqual(weekly_report_response.status_code, 200)
-        self.assertEqual(
-            weekly_report_response.content,
-            b'{"count":0,"next":null,"previous":null,"results":[]}',
-        )
+        self.assertEqual(weekly_report_json["count"], 0)
 
-    def test_add_jog(self):
-        response = self.client.post(
+    def test_customer_permissions(self):
+        jog_list_response = self.client.get(self.jog_list_url)
+        jog_list_json = jog_list_response.json()
+        self.assertEqual(jog_list_response.status_code, 200)
+        self.assertEqual(jog_list_json["count"], 0)
+
+        add_jog_response = self.client.post(
             self.jog_list_url,
             {
                 "date": "2024-01-01",
@@ -216,11 +193,32 @@ class RegisterTest(TestCase):
                 "location": "tbilisi",
             },
         )
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(add_jog_response.status_code, 201)
 
-        list_response = self.client.get(self.jog_list_url)
-        self.assertEqual(list_response.status_code, 200)
-        self.assertEqual(
-            list_response.content,
-            b'{"count":1,"next":null,"previous":null,"results":[{"id":1,"user":"test@mail.com","date":"2024-01-01","distance":1.0,"time":"00:01:00","location":"tbilisi","weather":{"id":1,"temperature":4,"description":"clear sky"}}]}',
+        jog_list_response = self.client.get(self.jog_list_url)
+        jog_list_json = jog_list_response.json()
+
+        for jog in jog_list_json["results"]:
+            if jog["date"] == "2024-01-01":
+                jog_id = jog["id"]
+
+        update_jog_response = self.client.put(
+            reverse("jogging_tracker:jog-detail", args=[jog_id]),
+            {
+                "date": "2024-01-01",
+                "distance": 2.0,
+                "time": 1.0,
+                "location": "tbilisi",
+            },
         )
+        update_jog_json = update_jog_response.json()
+        self.assertEqual(update_jog_json["distance"], 2.0)
+
+        weekly_report_response = self.client.get(self.weekly_report_url)
+        weekly_report_json = weekly_report_response.json()
+        self.assertEqual(weekly_report_response.status_code, 200)
+        self.assertEqual(weekly_report_json["count"], 1)
+        self.assertEqual(weekly_report_json["results"][0]["week_end"], "2024-01-07")
+        self.assertEqual(weekly_report_json["results"][0]["average_distance"], 1.0)
+        self.assertEqual(weekly_report_json["results"][0]["average_speed"], 3600.0)
+

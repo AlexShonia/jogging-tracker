@@ -55,4 +55,6 @@ tests
       
 
 if weather api gaatrakebs, have error for it (still upload jog?)
+when updating get user id based on email. perhaps query the db directly?
+   jog doesnt have anything unique other than id
 
