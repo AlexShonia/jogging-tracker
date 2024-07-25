@@ -1,91 +1,158 @@
 from datetime import timedelta
 from django.db.models import Q
-from django_filters import FilterSet
-from django_filters import DateTimeFilter, NumberFilter, CharFilter
-from jogging_tracker.models import Jog, WeeklyReport
+from rest_framework import filters
 
 
-class JogFilter(FilterSet):
-    from_date = DateTimeFilter(field_name="date", lookup_expr="gt")
-    to_date = DateTimeFilter(field_name="date", lookup_expr="lt")
-    not_date = DateTimeFilter(field_name="date", exclude=True)
-    date_or_filter = CharFilter(method="filter_date_or", field_name="date or filter")
+def custom_jog_filter(queryset, filter_option, value):
+    match filter_option:
+        case "date":
+            return queryset.filter(date=value)
+        case "not_date":
+            return queryset.exclude(date=value)
+        case "from_date":
+            return queryset.filter(date__gt=value)
+        case "to_date":
+            return queryset.filter(date__lt=value)
+        case "date_or":
+            greater_val, lower_val = value.split(",")
+            return queryset.filter(Q(date__gt=greater_val) | Q(date__lt=lower_val))
+        case "distance":
+            return queryset.filter(distance=value)
+        case "not_distance":
+            return queryset.exclude(distance=value)
+        case "from_distance":
+            return queryset.filter(distance__gt=value)
+        case "to_distance":
+            return queryset.filter(distance__lt=value)
+        case "distance_or":
+            greater_val, lower_val = value.split(",")
+            return queryset.filter(
+                Q(distance__gt=greater_val) | Q(distance__lt=lower_val)
+            )
+        case "time":
+            return queryset.filter(time=timedelta(minutes=int(value)))
+        case "not_time":
+            return queryset.exclude(time=timedelta(minutes=int(value)))
+        case "from_time":
+            return queryset.filter(time__gt=timedelta(minutes=int(value)))
+        case "to_time":
+            return queryset.filter(time__lt=timedelta(minutes=int(value)))
+        case "time_or":
+            greater_val, lower_val = value.split(",")
+            return queryset.filter(
+                Q(time__gt=timedelta(minutes=int(greater_val)))
+                | Q(time__lt=timedelta(minutes=int(lower_val)))
+            )
+        case "location":
+            return queryset.filter(location=value)
+        case "not_location":
+            return queryset.exclude(location=value)
 
-    min_distance = NumberFilter(field_name="distance", lookup_expr="gt")
-    max_distance = NumberFilter(field_name="distance", lookup_expr="lt")
-    not_distance = NumberFilter(field_name="distance", exclude=True)
-    distance_or_filter = CharFilter(
-        method="filter_distance_or", field_name="distance or filter"
-    )
+    return queryset
 
-    min_time = NumberFilter(field_name="time", lookup_expr="gt")
-    max_time = NumberFilter(field_name="time", lookup_expr="lt")
-    not_time = NumberFilter(field_name="time", exclude=True)
-    time_or_filter = CharFilter(method="filter_time_or", field_name="time or filter")
 
-    class Meta:
-        model = Jog
-        fields = [
+class JogFilter(filters.BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        filter_options = [
             "date",
+            "not_date",
+            "from_date",
+            "to_date",
+            "date_or",
             "distance",
+            "not_distance",
+            "from_distance",
+            "to_distance",
+            "distance_or",
             "time",
+            "not_time",
+            "from_time",
+            "to_time",
+            "time_or",
             "location",
-            "weather",
+            "not_location",
         ]
 
-    def filter_date_or(self, queryset, name, value):
-        greater_val, lower_val = value.split(",")
-        return queryset.filter(Q(date__gt=greater_val) | Q(date__lt=lower_val))
+        if len(request.query_params) == 0:
+            return queryset
+        else:
+            for filter_option in request.query_params:
+                if filter_option not in filter_options:
+                    continue
+                value = request.query_params.get(filter_option)
+                queryset = custom_jog_filter(queryset, filter_option, value)
+            return queryset
 
-    def filter_distance_or(self, queryset, name, value):
-        greater_val, lower_val = value.split(",")
-        return queryset.filter(
-            Q(distance__gt=greater_val) | Q(distance__lt=lower_val)
-        )
 
-    def filter_time_or(self, queryset, name, value):
-        greater_val, lower_val = value.split(",")
-        return queryset.filter(
-            Q(time__gt=timedelta(minutes=greater_val))
-            | Q(time__lt=timedelta(minutes=lower_val))
-        )
+def custom_weekly_report_filter(queryset, filter_option, value):
+    match filter_option:
+        case "date":
+            return queryset.filter(week_end=value)
+        case "not_date":
+            return queryset.exclude(week_end=value)
+        case "from_date":
+            return queryset.filter(week_end__gt=value)
+        case "to_date":
+            return queryset.filter(week_end__lt=value)
+        case "date_or":
+            greater_val, lower_val = value.split(",")
+            return queryset.filter(
+                Q(week_end__gt=greater_val) | Q(week_end__lt=lower_val)
+            )
+        case "average_speed":
+            return queryset.filter(average_speed=value)
+        case "not_average_speed":
+            return queryset.exclude(average_speed=value)
+        case "from_average_speed":
+            return queryset.filter(average_speed__gt=value)
+        case "to_average_speed":
+            return queryset.filter(average_speed__lt=value)
+        case "average_speed_or":
+            greater_val, lower_val = value.split(",")
+            return queryset.filter(
+                Q(average_speed__gt=greater_val) | Q(average_speed__lt=lower_val)
+            )
+        case "average_distance":
+            return queryset.filter(average_distance=value)
+        case "not_average_distance":
+            return queryset.exclude(average_distance=value)
+        case "from_average_distance":
+            return queryset.filter(average_distance__gt=value)
+        case "to_average_distance":
+            return queryset.filter(average_distance__lt=value)
+        case "average_distance_or":
+            greater_val, lower_val = value.split(",")
+            return queryset.filter(
+                Q(average_distance__gt=greater_val) | Q(average_distance__lt=lower_val)
+            )
 
-class WeeklyReportFilter(FilterSet):
-    from_date = DateTimeFilter(field_name="week_end", lookup_expr="gt")
-    to_date = DateTimeFilter(field_name="week_end", lookup_expr="lt")
-    not_date = DateTimeFilter(field_name="week_end", exclude=True)
-    date_or_filter = CharFilter(method="filter_date_or", field_name="week_end or filter")
 
-    from_avg_distance = NumberFilter(field_name="average_distance", lookup_expr="gt")
-    to_avg_distance = NumberFilter(field_name="average_distance", lookup_expr="lt")
-    not_avg_distance = NumberFilter(field_name="average_distance", exclude=True)
-    avg_distance_or_filter = CharFilter(
-        method="filter_avg_distance_or", field_name="average_distance or filter"
-    )
-
-    from_avg_speed = NumberFilter(field_name="average_speed", lookup_expr="gt")
-    to_avg_speed = NumberFilter(field_name="average_speed", lookup_expr="lt")
-    not_avg_speed = NumberFilter(field_name="average_speed", exclude=True)
-    avg_speed_or_filter = CharFilter(
-        method="filter_avg_speed_or", field_name="average_speed or filter"
-    )
-
-    class Meta:
-        model = WeeklyReport
-        fields = [
-            "week_end",
+class WeeklyReportFilter(filters.BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        filter_options = [
+            "date",
+            "not_date",
+            "from_date",
+            "to_date",
+            "date_or",
             "average_speed",
+            "not_average_speed",
+            "from_average_speed",
+            "to_average_speed",
+            "average_speed_or",
             "average_distance",
+            "not_average_distance",
+            "from_average_distance",
+            "to_average_distance",
+            "average_distance_or",
         ]
 
-    def filter_date_or(self, queryset, name, value):
-        greater_val, lower_val = value.split(",")
-        return queryset.filter(Q(week_end__gt=greater_val) | Q(week_end__lt=lower_val))
-
-    def filter_avg_distance_or(self, queryset, name, value):
-        greater_val, lower_val = value.split(",")
-        return queryset.filter(Q(average_distance__gt=greater_val) | Q(average_distance__lt=lower_val))
-
-    def filter_avg_speed_or(self, queryset, name, value):
-        greater_val, lower_val = value.split(",")
-        return queryset.filter(Q(average_speed__gt=greater_val) | Q(average_speed__lt=lower_val))
+        if len(request.query_params) == 0:
+            return queryset
+        else:
+            for filter_option in request.query_params:
+                if filter_option not in filter_options:
+                    continue
+                value = request.query_params.get(filter_option)
+                queryset = custom_weekly_report_filter(queryset, filter_option, value)
+            return queryset

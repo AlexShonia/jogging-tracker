@@ -1,0 +1,72 @@
+Write a REST API that tracks jogging times of users
+
++ API Users must be able to create an account and log in.
+  +add drf auth
++ All API calls must be authenticated.
++ Implement at least three roles with different permission levels: a regular user would only be able to CRUD on their owned records, a user manager would be able to CRUD only users, and an admin would be able to CRUD all records and users.
++ Each time entry when entered has a date, distance, time, and location.
++ Based on the provided date and location, API should connect to a weather API provider and get the weather conditions for the run, and store that with each run.
++ The API must create a report on average speed & distance per week.
++ The API must be able to return data in the JSON format.
++ The API should provide filter capabilities for all endpoints that return a list of elements, as well should be able to support pagination.
+  + pagination
++ The API filtering should allow using parenthesis for defining operations precedence and use any combination of the available fields. The supported operations should at least include or, and, eq (equals), ne (not equals), gt (greater than), lt (lower than).
+  Example -> (date eq '2016-05-01') AND ((distance gt 20) OR (distance lt 10)).
+  • REST/GraphQL API. Make it possible to perform all user and admin actions via the API, including authentication.
+  • In any case, you should be able to explain how a REST/GraphQL API works and demonstrate that by creating functional tests that use the REST/GraphQL Layer directly. Please be prepared to use REST/GraphQL clients like Postman, cURL, etc. for this purpose.
+  • Write unit and e2e tests.
+
++ admin should be able to access all weekly_reports
++ add user field to serializer so that admin knows who it belongs to
++ add a signupserializer so that data is validated properly
+  + have 2 passwords that match
++ authenticate right after registration
++ recalculat which jogs are in each week each time instead of having foreignkey weekly_report
+  + when jog is created recalculate
++ add filter
++ or filter
++ user filter
++ weekly report filter
+
++ move to postgres
++ user serializer.data in jog viewset instead of self.request.data
+
+  + time convertions will get messed up
+
++ make weather separate table or a JSON field
++ remove functionality of creating users in user list view
+
+tests
+
++ register succesfully
++ use named views and reverse
+  do tests about permissions. admin permissions test for example and etc
+  + admin permissions
+    + admin get jogs
+    + admin update jogs
+    + admin delete jogs
+    + admin get users
+    + admin update users
+    + admin delete users
+    + admin view weekly_report
+      manager permissions
+    + user permissions
+    + jog permissions
+    + weekly report permission
+    * customer permissions
+
++ get_Weather da recalculate_weeekly ghaitane calke failshi da iqidan chaaimporte
++ check repeat password on def validate() not def save()
+  or validate_password() even better
++ restrict adding jog for this week only. not in the future or last week
+  + fix related tests to use today
+    gadaxede: https://www.django-rest-framework.org/api-guide/serializers/#field-level-validation
++ rewrite filtering yourself -> https://www.django-rest-framework.org/api-guide/filtering/#custom-generic-filtering
+
+CELERY
+use celery to calculate weekly reports every monday
+will need celery-beat for it
+
+DOCKER
+
+if weather api gaatrakebs, have error for it (still upload jog?)

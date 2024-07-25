@@ -1,10 +1,11 @@
+import datetime
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 from jogging_tracker.models import User, WeeklyReport
 
 
-class Test(TestCase):
+class APITest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.register_url = reverse("jogging_tracker:register")
@@ -46,10 +47,12 @@ class Test(TestCase):
         self.assertEqual(manager.role, "manager")
 
     def test_admin_permissions(self):
+        today = datetime.date.today()
+        today_string = today.strftime("%Y-%m-%d")
         add_jog_response = self.client.post(
             self.jog_list_url,
             {
-                "date": "2024-01-01",
+                "date": today_string,
                 "distance": 1.0,
                 "time": 1.0,
                 "location": "tbilisi",
@@ -97,13 +100,13 @@ class Test(TestCase):
         self.assertEqual(jog_list_json["count"], 1)
 
         for jog in jog_list_json["results"]:
-            if jog["date"] == "2024-01-01":
+            if jog["date"] == today_string:
                 jog_id = jog["id"]
 
         update_jog_response = self.client.put(
             reverse("jogging_tracker:jog-detail", args=[jog_id]),
             {
-                "date": "2024-01-01",
+                "date": today_string,
                 "distance": 2.0,
                 "time": 1.0,
                 "location": "tbilisi",
@@ -125,10 +128,12 @@ class Test(TestCase):
         self.assertEqual(weekly_report_json["count"], 0)
 
     def test_manager_permissions(self):
+        today = datetime.date.today()
+        today_string = today.strftime("%Y-%m-%d")
         add_jog_response = self.client.post(
             self.jog_list_url,
             {
-                "date": "2024-01-01",
+                "date": today_string,
                 "distance": 1.0,
                 "time": 1.0,
                 "location": "tbilisi",
@@ -179,6 +184,9 @@ class Test(TestCase):
         self.assertEqual(weekly_report_json["count"], 0)
 
     def test_customer_permissions(self):
+        today = datetime.date.today()
+        today_string = today.strftime("%Y-%m-%d")
+
         jog_list_response = self.client.get(self.jog_list_url)
         jog_list_json = jog_list_response.json()
         self.assertEqual(jog_list_response.status_code, 200)
@@ -187,7 +195,7 @@ class Test(TestCase):
         add_jog_response = self.client.post(
             self.jog_list_url,
             {
-                "date": "2024-01-01",
+                "date": today_string,
                 "distance": 1.0,
                 "time": 1.0,
                 "location": "tbilisi",
@@ -199,13 +207,13 @@ class Test(TestCase):
         jog_list_json = jog_list_response.json()
 
         for jog in jog_list_json["results"]:
-            if jog["date"] == "2024-01-01":
+            if jog["date"] == today_string:
                 jog_id = jog["id"]
 
         update_jog_response = self.client.put(
             reverse("jogging_tracker:jog-detail", args=[jog_id]),
             {
-                "date": "2024-01-01",
+                "date": today_string,
                 "distance": 2.0,
                 "time": 1.0,
                 "location": "tbilisi",
@@ -214,11 +222,17 @@ class Test(TestCase):
         update_jog_json = update_jog_response.json()
         self.assertEqual(update_jog_json["distance"], 2.0)
 
+
+        days_till_weekend = 6 - today.weekday()
+        delta = datetime.timedelta(days=days_till_weekend)
+        week_end = today + delta
+        week_end_string = week_end.strftime("%Y-%m-%d")
+
         weekly_report_response = self.client.get(self.weekly_report_url)
         weekly_report_json = weekly_report_response.json()
         self.assertEqual(weekly_report_response.status_code, 200)
         self.assertEqual(weekly_report_json["count"], 1)
-        self.assertEqual(weekly_report_json["results"][0]["week_end"], "2024-01-07")
+        self.assertEqual(weekly_report_json["results"][0]["week_end"], week_end_string)
         self.assertEqual(weekly_report_json["results"][0]["average_distance"], 1.0)
         self.assertEqual(weekly_report_json["results"][0]["average_speed"], 3600.0)
 
