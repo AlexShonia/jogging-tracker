@@ -1,0 +1,53 @@
+version: "3"
+
+services:
+  database:
+    restart: always
+    container_name: database
+    image: postgres:16.8
+    hostname: jogtracker
+    ports:
+      - "127.0.0.1:5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_PASSWORD=$PGPASSWORD
+      - POSTGRES_USER=$PGUSER
+      - POSTGRES_DB=$PGDATABASE
+
+  jog-backend:
+    restart: always
+    container_name: jog-backend
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8005:80"
+    env_file:
+      - .env
+    volumes:
+      - .:/backend
+      - ./static:/backend/static
+      - ./media:/backend/media
+
+  # redis:
+  #   container_name: redis
+  #   restart: always
+  #   image: redis:6.2.0
+  #   hostname: redis-db
+  #   ports:
+  #     - "127.0.0.1:6380:6379"
+
+  # celery:
+  #   restart: always
+  #   container_name: celery
+  #   build:
+  #     context: ./
+  #     dockerfile: celery.Dockerfile
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - .:/backend
+
+volumes:
+  postgres_data:
