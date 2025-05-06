@@ -14,8 +14,6 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from jogging_tracker.filters import JogFilter, WeeklyReportFilter, JogFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from jogging_tracker.weather import get_weather
-from jogging_tracker.tasks import recalculate_weekly_report_task
-
 
 class JogViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
@@ -23,25 +21,14 @@ class JogViewSet(viewsets.ModelViewSet):
     filter_backends = [JogFilter]
 
     def perform_create(self, serializer):
-        date = serializer.validated_data.get("date")
+        date: datetime.date = serializer.validated_data.get("date")
         days_till_weekend = 6 - date.weekday()
         delta = datetime.timedelta(days=days_till_weekend)
-        week_end : datetime.date = date + delta
+        week_end = date + delta
 
-        if WeeklyReport.objects.filter(
+        if not WeeklyReport.objects.filter(
             week_end=week_end, user=self.request.user
         ).exists():
-            adding = {}
-            if serializer.validated_data:
-                adding["distance"] = float(serializer.validated_data.get("distance"))
-                adding["total_minutes"] = float(serializer.validated_data.get("time").total_seconds() / 60)
-            recalculate_weekly_report_task.delay(
-                week_end=week_end.isoformat(),
-                user=self.request.user.id,
-                adding=adding,
-            )
-
-        else:
             distance = serializer.validated_data.get("distance")
             time = serializer.validated_data.get("time")
             average_distance = distance
@@ -64,7 +51,7 @@ class JogViewSet(viewsets.ModelViewSet):
         )
 
     def perform_destroy(self, instance):
-        date = instance.date
+        date: datetime.date = instance.date
         days_till_weekend = 6 - date.weekday()
         delta = datetime.timedelta(days=days_till_weekend)
         week_end = date + delta
@@ -78,7 +65,6 @@ class JogViewSet(viewsets.ModelViewSet):
             instance.delete()
         else:
             instance.delete()
-            recalculate_weekly_report(week_end=week_end, user=instance.user)
 
     def get_queryset(self):
         if self.request.user.role == "admin":

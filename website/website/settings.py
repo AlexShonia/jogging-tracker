@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "jogging_tracker",
     "django_filters",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -185,3 +186,4 @@ WEATHER_URL = os.environ.get("WEATHER_URL")
 
 CELERY_BROKER_URL = "redis://localhost:6379"
 CELERY_RESULT_BACKEND = "redis://localhost:6379"
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'

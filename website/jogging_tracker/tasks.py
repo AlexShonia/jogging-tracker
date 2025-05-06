@@ -1,7 +1,6 @@
 from celery import shared_task
-from jogging_tracker.weekly_report import recalculate_weekly_report
+from jogging_tracker.weekly_report import calculate_all_weekly_reports
 
 @shared_task()
-def recalculate_weekly_report_task(week_end, user, adding=False):
-    recalculate_weekly_report(week_end, user, adding)
-
+def recalculate_all_weekly_reports_task():
+    calculate_all_weekly_reports()
