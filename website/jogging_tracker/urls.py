@@ -10,6 +10,6 @@ router.register(r"users", views.UserViewSet, basename="user")
 app_name = "jogging_tracker"
 urlpatterns = [
     path("", include(router.urls)),
-    path("weekly_report/", views.WeeklyReportList.as_view(), name="weekly_report"),
+    path("weekly-report/", views.WeeklyReportList.as_view(), name="weekly_report"),
     path("register/", views.Register.as_view(), name="register"),
 ]

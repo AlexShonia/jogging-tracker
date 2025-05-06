@@ -1,9 +1,7 @@
-import requests, datetime
+import datetime
 from datetime import timedelta
-from django.conf import settings
 from rest_framework import viewsets, permissions, generics, status, mixins
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
 from jogging_tracker.models import Jog, User, WeeklyReport, Weather
 from jogging_tracker.serializers import (
     JogSerializer,
@@ -16,7 +14,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from jogging_tracker.filters import JogFilter, WeeklyReportFilter, JogFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from jogging_tracker.weather import get_weather
-from jogging_tracker.weekly_report import recalculate_weekly_report
+from jogging_tracker.tasks import recalculate_weekly_report_task
 
 
 class JogViewSet(viewsets.ModelViewSet):
@@ -28,16 +26,21 @@ class JogViewSet(viewsets.ModelViewSet):
         date = serializer.validated_data.get("date")
         days_till_weekend = 6 - date.weekday()
         delta = datetime.timedelta(days=days_till_weekend)
-        week_end = date + delta
+        week_end : datetime.date = date + delta
 
         if WeeklyReport.objects.filter(
             week_end=week_end, user=self.request.user
         ).exists():
-            recalculate_weekly_report(
-                week_end=week_end,
-                user=self.request.user,
-                adding=serializer.validated_data,
+            adding = {}
+            if serializer.validated_data:
+                adding["distance"] = float(serializer.validated_data.get("distance"))
+                adding["total_minutes"] = float(serializer.validated_data.get("time").total_seconds() / 60)
+            recalculate_weekly_report_task.delay(
+                week_end=week_end.isoformat(),
+                user=self.request.user.id,
+                adding=adding,
             )
+
         else:
             distance = serializer.validated_data.get("distance")
             time = serializer.validated_data.get("time")

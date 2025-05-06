@@ -182,3 +182,6 @@ AUTH_USER_MODEL = "jogging_tracker.User"
 
 WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY")
 WEATHER_URL = os.environ.get("WEATHER_URL")
+
+CELERY_BROKER_URL = "redis://localhost:6379"
+CELERY_RESULT_BACKEND = "redis://localhost:6379"
