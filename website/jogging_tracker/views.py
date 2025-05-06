@@ -50,11 +50,15 @@ class JogViewSet(viewsets.ModelViewSet):
             weather=weather,
         )
 
-    def perform_destroy(self, instance):
+    def destroy(self,  request, *args, **kwargs):
+        instance = self.get_object()
         date: datetime.date = instance.date
         days_till_weekend = 6 - date.weekday()
         delta = datetime.timedelta(days=days_till_weekend)
         week_end = date + delta
+        
+        if week_end < date.today():
+            return Response(data={"message": "Can't delete jog from past weeks"}, status=status.HTTP_400_BAD_REQUEST)
 
         jogs = Jog.objects.filter(
             user=instance.user, date__range=[week_end - timedelta(days=6), week_end]
@@ -65,6 +69,8 @@ class JogViewSet(viewsets.ModelViewSet):
             instance.delete()
         else:
             instance.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self):
         if self.request.user.role == "admin":

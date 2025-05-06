@@ -30,14 +30,14 @@ class JogSerializer(serializers.ModelSerializer):
         delta = datetime.timedelta(days=today.weekday() + 1)
         last_week_end = today - delta
 
-        if value < last_week_end:
+        if value <= last_week_end:
             raise serializers.ValidationError(
                 "Date must be in this week"
             )
 
         if value > today:
             raise serializers.ValidationError(
-                "Date must be not be in the future"
+                "Date must not be in the future"
             )
 
         return value
