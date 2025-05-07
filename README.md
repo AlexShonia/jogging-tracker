@@ -1,6 +1,6 @@
 # Jogging Tracker
 
-API is live now: http://jog-tracker.ashonia.info
+API is live now: https://jog-tracker.ashonia.info
 
 ## 🏃‍♂️ Project Overview
 
