@@ -1,5 +1,7 @@
 # Jogging Tracker
 
+API is live now: http://jog-tracker.ashonia.info
+
 ## 🏃‍♂️ Project Overview
 
 Jogging Tracker is an API that demonstrates my ability to build scalable, secure, and feature-rich REST APIs using modern technologies. This project showcases my expertise in backend development, system architecture, and best practices in software engineering.
@@ -25,6 +27,13 @@ Jogging Tracker is an API that demonstrates my ability to build scalable, secure
 - Created efficient ORM queries
 - Integrated third-party weather API for real-time weather data
 - Implemented weekly report generation with data aggregation
+
+### Advanced Filtering System
+- Implemented a powerful and flexible filtering system that supports:
+  - Multiple filter types: exact match, range, negation, and OR conditions
+  - Complex queries combining multiple filters
+  - Filtering on all relevant fields (date, distance, time, location, etc.)
+  - Support for both jogging activities and weekly reports
 
 ### Performance & Scalability
 - Used Celery background tasks for heavy computations
@@ -82,21 +91,41 @@ This project helped me develop and demonstrate several key skills:
 
 ## 📝 API Documentation
 
-The API provides the following main endpoints:
+### Authentication Endpoints
+- `POST /api/token/` - Obtain JWT access and refresh tokens
+- `POST /api/token/refresh/` - Refresh JWT access token
+- `POST /register/` - Register a new user
 
-- **Authentication**
-  - User registration and login
-  - JWT token management
+### Jogging Activities Endpoints
+- `GET /jogs/` - List jogging activities (with filtering)
+  - Query Parameters:
+    - `date`, `not_date`, `from_date`, `to_date`, `date_or`
+    - `distance`, `not_distance`, `from_distance`, `to_distance`, `distance_or`
+    - `time`, `not_time`, `from_time`, `to_time`, `time_or`
+    - `location`, `not_location`
+- `POST /jogs/` - Create a new jogging activity
+- `GET /jogs/{id}/` - Retrieve a specific jogging activity
+- `PUT /jogs/{id}/` - Update a jogging activity
+- `DELETE /jogs/{id}/` - Delete a jogging activity
 
-- **Jogging Activities**
-  - CRUD operations for jogging records
-  - Weather data integration
-  - Location tracking
+### User Management Endpoints (Manager/Admin only)
+- `GET /users/` - List users (filterable by id, email)
+- `GET /users/{id}/` - Retrieve user details
+- `PUT /users/{id}/` - Update user details
+- `DELETE /users/{id}/` - Delete a user
 
-- **Reports**
-  - Weekly activity summaries
-  - Performance metrics
-  - Statistical analysis
+### Weekly Reports Endpoints
+- `GET /weekly-report/` - Get weekly jogging reports
+  - Query Parameters:
+    - `date`, `not_date`, `from_date`, `to_date`, `date_or`
+    - `average_speed`, `not_average_speed`, `from_average_speed`, `to_average_speed`, `average_speed_or`
+    - `average_distance`, `not_average_distance`, `from_average_distance`, `to_average_distance`, `average_distance_or`
+
+### Authentication
+All endpoints except registration and token obtain/refresh require JWT authentication:
+```
+Authorization: Bearer <your_access_token>
+```
 
 ## 📫 Contact
 
