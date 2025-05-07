@@ -34,6 +34,15 @@ Jogging Tracker is an API that demonstrates my ability to build scalable, secure
   - Complex queries combining multiple filters
   - Filtering on all relevant fields (date, distance, time, location, etc.)
   - Support for both jogging activities and weekly reports
+  - Efficient database queries with proper indexing
+
+### Comprehensive Test Suite
+- Implemented extensive test coverage for all major features
+- Tests for user authentication and role-based permissions
+- API endpoint testing with REST framework's APIClient
+- Data validation and business logic testing
+- Weekly report calculation verification
+- Test cases for all user roles (admin, manager, customer)
 
 ### Performance & Scalability
 - Used Celery background tasks for heavy computations
